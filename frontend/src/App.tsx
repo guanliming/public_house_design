@@ -1,5 +1,5 @@
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html, OrbitControls, Sky, Environment, Grid, useProgress } from '@react-three/drei';
 import * as THREE from 'three';
 
@@ -11,6 +11,11 @@ import { StatusBar } from './components/ui/StatusBar';
 import { HelpPanel } from './components/ui/HelpPanel';
 
 type ViewMode = 'orbit' | 'fps' | 'placement';
+
+type OrbitControlsRef = {
+  target: THREE.Vector3;
+  update: () => void;
+};
 
 const CanvasLoader: React.FC = () => {
   const { active, progress, item, loaded, total } = useProgress();
@@ -31,25 +36,64 @@ const CanvasLoader: React.FC = () => {
   );
 };
 
-const CameraModeController: React.FC<{ viewMode: ViewMode; target: THREE.Vector3 }> = ({ viewMode, target }) => {
+const CameraModeController: React.FC<{
+  viewMode: ViewMode;
+  orbitTarget: THREE.Vector3;
+  controlsRef: React.MutableRefObject<OrbitControlsRef | null>;
+}> = ({ viewMode, orbitTarget, controlsRef }) => {
   const { camera } = useThree();
-  const { setCameraPosition } = useAppStore();
+  const { setCameraPosition, fpsMoveTarget, setFpsMoveTarget } = useAppStore();
   const lastMode = useRef<ViewMode | null>(null);
+  const lastCameraSync = useRef(0);
 
   useEffect(() => {
     if (lastMode.current === viewMode) return;
     lastMode.current = viewMode;
 
     if (viewMode === 'fps') {
-      camera.position.set(0.9, 1.6, 0.9);
-      camera.lookAt(target.x, 1.6, target.z);
+      const fpsPosition = new THREE.Vector3(0.9, 1.6, 0.9);
+      const fpsTarget = new THREE.Vector3(4.8, 1.6, 3.6);
+      camera.position.copy(fpsPosition);
+      camera.lookAt(fpsTarget);
+      controlsRef.current?.target.copy(fpsTarget);
+      controlsRef.current?.update();
     } else {
       camera.position.set(14, 10, 14);
-      camera.lookAt(target);
+      camera.lookAt(orbitTarget);
+      controlsRef.current?.target.copy(orbitTarget);
+      controlsRef.current?.update();
+      setFpsMoveTarget(null);
     }
 
     setCameraPosition({ x: camera.position.x, y: camera.position.y, z: camera.position.z });
-  }, [camera, setCameraPosition, target, viewMode]);
+  }, [camera, controlsRef, orbitTarget, setCameraPosition, setFpsMoveTarget, viewMode]);
+
+  useFrame((state, delta) => {
+    if (viewMode !== 'fps' || !fpsMoveTarget) return;
+
+    const targetPos = new THREE.Vector3(fpsMoveTarget.x, 1.6, fpsMoveTarget.z);
+    const oldPosition = camera.position.clone();
+    const nextPosition = oldPosition.clone().lerp(targetPos, Math.min(1, delta * 2.4));
+    const moveDelta = nextPosition.clone().sub(oldPosition);
+
+    camera.position.copy(nextPosition);
+    controlsRef.current?.target.add(moveDelta);
+    controlsRef.current?.update();
+
+    if (state.clock.elapsedTime - lastCameraSync.current > 0.16) {
+      lastCameraSync.current = state.clock.elapsedTime;
+      setCameraPosition({ x: camera.position.x, y: camera.position.y, z: camera.position.z });
+    }
+
+    if (camera.position.distanceTo(targetPos) < 0.08) {
+      const finalDelta = targetPos.clone().sub(camera.position);
+      camera.position.copy(targetPos);
+      controlsRef.current?.target.add(finalDelta);
+      controlsRef.current?.update();
+      setCameraPosition({ x: targetPos.x, y: 1.6, z: targetPos.z });
+      setFpsMoveTarget(null);
+    }
+  });
 
   return null;
 };
@@ -58,6 +102,7 @@ const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('orbit');
   const [canvasError, setCanvasError] = useState<string | null>(null);
   const [canvasReady, setCanvasReady] = useState(false);
+  const controlsRef = useRef<OrbitControlsRef | null>(null);
   const { ensureDemoProject, setPlacementMode, placementValidation, currentProject, setCameraPosition } = useAppStore();
 
   useEffect(() => {
@@ -79,7 +124,7 @@ const App: React.FC = () => {
         <Toolbar currentMode={viewMode} onModeChange={setViewMode} />
 
         {viewMode === 'orbit' && <div className="mode-indicator">上帝视角：查看整体布局</div>}
-        {viewMode === 'fps' && <div className="mode-indicator">第一视角：可缓慢环视，暂不开放漫游</div>}
+        {viewMode === 'fps' && <div className="mode-indicator">第一视角：拖动环视，点击地板平滑移动</div>}
         {viewMode === 'placement' && <div className="mode-indicator">家具编辑：选中家具后点击地面移动</div>}
 
         <div className="canvas-container">
@@ -138,9 +183,10 @@ const App: React.FC = () => {
                   infiniteGrid
                 />
 
-                <CameraModeController viewMode={viewMode} target={orbitTarget} />
+                <CameraModeController viewMode={viewMode} orbitTarget={orbitTarget} controlsRef={controlsRef} />
                 <Scene3D viewMode={viewMode} />
                 <OrbitControls
+                  ref={controlsRef}
                   makeDefault
                   enabled={viewMode !== 'placement'}
                   enablePan={viewMode !== 'fps'}
@@ -148,7 +194,6 @@ const App: React.FC = () => {
                   rotateSpeed={viewMode === 'fps' ? 0.35 : 1}
                   minDistance={viewMode === 'fps' ? 0.01 : 1}
                   maxDistance={viewMode === 'fps' ? 0.01 : 50}
-                  target={viewMode === 'fps' ? new THREE.Vector3(4.8, 1.6, 3.6) : orbitTarget}
                   maxPolarAngle={viewMode === 'fps' ? Math.PI / 1.9 : Math.PI / 2}
                   minPolarAngle={viewMode === 'fps' ? Math.PI / 2.8 : 0}
                 />

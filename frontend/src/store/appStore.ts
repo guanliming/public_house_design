@@ -10,6 +10,7 @@ interface AppState {
   selectedFurniture: Furniture | null;
   cameraPosition: Vector3;
   cameraRotation: Vector3;
+  fpsMoveTarget: Vector3 | null;
   placementMode: boolean;
   placementValidation: PlacementValidation | null;
   setCurrentProject: (project: DesignProject | null) => void;
@@ -26,6 +27,7 @@ interface AppState {
   setSelectedFurniture: (furniture: Furniture | null) => void;
   setCameraPosition: (position: Vector3) => void;
   setCameraRotation: (rotation: Vector3) => void;
+  setFpsMoveTarget: (position: Vector3 | null) => void;
   setPlacementMode: (enabled: boolean) => void;
   setPlacementValidation: (validation: PlacementValidation | null) => void;
   validatePlacement: (furniture: Furniture, position: Vector3) => PlacementValidation;
@@ -98,6 +100,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectedFurniture: null,
   cameraPosition: { x: 12, y: 10, z: 12 },
   cameraRotation: { x: 0, y: 0, z: 0 },
+  fpsMoveTarget: null,
   placementMode: false,
   placementValidation: null,
 
@@ -169,6 +172,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   setSelectedFurniture: (furniture) => set({ selectedFurniture: furniture }),
   setCameraPosition: (position) => set({ cameraPosition: position }),
   setCameraRotation: (rotation) => set({ cameraRotation: rotation }),
+  setFpsMoveTarget: (position) => set({ fpsMoveTarget: position }),
   setPlacementMode: (enabled) => set({ placementMode: enabled }),
   setPlacementValidation: (validation) => set({ placementValidation: validation }),
   validatePlacement: (furniture, position) => {

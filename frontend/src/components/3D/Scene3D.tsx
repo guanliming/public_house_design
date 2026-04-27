@@ -97,7 +97,7 @@ const FurnitureMesh: React.FC<{ furniture: Furniture; isSelected: boolean; movab
 };
 
 export const Scene3D: React.FC<Scene3DProps> = ({ viewMode }) => {
-  const { currentProject, selectedFurniture, setSelectedFurniture, moveFurniture, setPlacementValidation } = useAppStore();
+  const { currentProject, selectedFurniture, setSelectedFurniture, moveFurniture, setFpsMoveTarget, setPlacementValidation } = useAppStore();
   const room = currentProject?.rooms[0] || sampleRoom;
   const furnitureList = currentProject?.furniture || [];
 
@@ -107,9 +107,16 @@ export const Scene3D: React.FC<Scene3DProps> = ({ viewMode }) => {
   };
 
   const handleFloorPlacement = (e: ThreeEvent<MouseEvent>) => {
-    if (viewMode !== 'placement' || !selectedFurniture) return;
     e.stopPropagation();
-    moveFurniture(selectedFurniture.id, { x: e.point.x, y: 0, z: e.point.z });
+
+    if (viewMode === 'placement' && selectedFurniture) {
+      moveFurniture(selectedFurniture.id, { x: e.point.x, y: 0, z: e.point.z });
+      return;
+    }
+
+    if (viewMode === 'fps') {
+      setFpsMoveTarget({ x: e.point.x, y: 1.6, z: e.point.z });
+    }
   };
 
   return (
