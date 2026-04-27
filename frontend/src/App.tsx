@@ -79,7 +79,7 @@ const App: React.FC = () => {
         <Toolbar currentMode={viewMode} onModeChange={setViewMode} />
 
         {viewMode === 'orbit' && <div className="mode-indicator">上帝视角：查看整体布局</div>}
-        {viewMode === 'fps' && <div className="mode-indicator">安全第一视角：仅切换到门口观察位</div>}
+        {viewMode === 'fps' && <div className="mode-indicator">第一视角：可缓慢环视，暂不开放漫游</div>}
         {viewMode === 'placement' && <div className="mode-indicator">家具编辑：选中家具后点击地面移动</div>}
 
         <div className="canvas-container">
@@ -143,11 +143,14 @@ const App: React.FC = () => {
                 <OrbitControls
                   makeDefault
                   enabled={viewMode !== 'placement'}
+                  enablePan={viewMode !== 'fps'}
+                  enableZoom={viewMode !== 'fps'}
+                  rotateSpeed={viewMode === 'fps' ? 0.35 : 1}
                   minDistance={viewMode === 'fps' ? 0.01 : 1}
                   maxDistance={viewMode === 'fps' ? 0.01 : 50}
-                  target={orbitTarget}
-                  maxPolarAngle={viewMode === 'fps' ? Math.PI / 2.2 : Math.PI / 2}
-                  minPolarAngle={viewMode === 'fps' ? Math.PI / 2.2 : 0}
+                  target={viewMode === 'fps' ? new THREE.Vector3(4.8, 1.6, 3.6) : orbitTarget}
+                  maxPolarAngle={viewMode === 'fps' ? Math.PI / 1.9 : Math.PI / 2}
+                  minPolarAngle={viewMode === 'fps' ? Math.PI / 2.8 : 0}
                 />
               </Suspense>
             </Canvas>

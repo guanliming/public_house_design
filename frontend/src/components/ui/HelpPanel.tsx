@@ -21,10 +21,10 @@ export const HelpPanel: React.FC<HelpPanelProps> = ({ viewMode }) => {
       case 'fps':
         return (
           <>
-            <div><strong>安全第一视角</strong></div>
-            <div>当前只切换到门口人眼高度</div>
-            <div>已临时关闭漫游控制，避免浏览器无响应</div>
-            <div>确认不再卡死后，再逐步恢复移动功能</div>
+            <div><strong>第一视角</strong></div>
+            <div><kbd>鼠标拖拽</kbd> 缓慢环视</div>
+            <div>当前已关闭缩放和平移</div>
+            <div>当前暂不开放 WASD 漫游，优先保证稳定</div>
           </>
         );
       case 'placement':
