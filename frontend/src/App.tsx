@@ -42,13 +42,43 @@ const CameraModeController: React.FC<{
   controlsRef: React.MutableRefObject<OrbitControlsRef | null>;
 }> = ({ viewMode, orbitTarget, controlsRef }) => {
   const { camera } = useThree();
-  const { setCameraPosition, fpsMoveTarget, setFpsMoveTarget } = useAppStore();
+  const { currentProject, setCameraPosition, fpsMoveTarget, setFpsMoveTarget } = useAppStore();
   const lastMode = useRef<ViewMode | null>(null);
   const lastCameraSync = useRef(0);
+  const keysPressed = useRef<Set<string>>(new Set());
+  const forward = useRef(new THREE.Vector3());
+  const right = useRef(new THREE.Vector3());
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (viewMode !== 'fps') return;
+
+      const supportedKeys = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'KeyQ', 'KeyE', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+      if (!supportedKeys.includes(event.code)) return;
+
+      event.preventDefault();
+      keysPressed.current.add(event.code);
+      setFpsMoveTarget(null);
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      keysPressed.current.delete(event.code);
+    };
+
+    window.addEventListener('keydown', handleKeyDown, { passive: false });
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+      keysPressed.current.clear();
+    };
+  }, [setFpsMoveTarget, viewMode]);
 
   useEffect(() => {
     if (lastMode.current === viewMode) return;
     lastMode.current = viewMode;
+    keysPressed.current.clear();
 
     if (viewMode === 'fps') {
       const fpsPosition = new THREE.Vector3(0.9, 1.6, 0.9);
@@ -69,29 +99,56 @@ const CameraModeController: React.FC<{
   }, [camera, controlsRef, orbitTarget, setCameraPosition, setFpsMoveTarget, viewMode]);
 
   useFrame((state, delta) => {
-    if (viewMode !== 'fps' || !fpsMoveTarget) return;
+    if (viewMode !== 'fps') return;
 
-    const targetPos = new THREE.Vector3(fpsMoveTarget.x, 1.6, fpsMoveTarget.z);
+    const safeDelta = Math.min(delta, 0.05);
+    const room = currentProject?.rooms[0];
     const oldPosition = camera.position.clone();
-    const nextPosition = oldPosition.clone().lerp(targetPos, Math.min(1, delta * 2.4));
-    const moveDelta = nextPosition.clone().sub(oldPosition);
+    let nextPosition = oldPosition.clone();
 
-    camera.position.copy(nextPosition);
-    controlsRef.current?.target.add(moveDelta);
-    controlsRef.current?.update();
+    if (fpsMoveTarget) {
+      const targetPos = new THREE.Vector3(fpsMoveTarget.x, 1.6, fpsMoveTarget.z);
+      nextPosition = oldPosition.clone().lerp(targetPos, Math.min(1, safeDelta * 2.4));
+
+      if (nextPosition.distanceTo(targetPos) < 0.08) {
+        nextPosition.copy(targetPos);
+        setFpsMoveTarget(null);
+      }
+    } else {
+      const moveForward = Number(keysPressed.current.has('KeyW') || keysPressed.current.has('ArrowUp')) - Number(keysPressed.current.has('KeyS') || keysPressed.current.has('ArrowDown'));
+      const moveRight = Number(keysPressed.current.has('KeyD') || keysPressed.current.has('KeyE') || keysPressed.current.has('ArrowRight')) - Number(keysPressed.current.has('KeyA') || keysPressed.current.has('KeyQ') || keysPressed.current.has('ArrowLeft'));
+
+      if (moveForward !== 0 || moveRight !== 0) {
+        camera.getWorldDirection(forward.current);
+        forward.current.y = 0;
+        forward.current.normalize();
+        right.current.crossVectors(forward.current, camera.up).normalize();
+
+        const move = new THREE.Vector3();
+        move.addScaledVector(forward.current, moveForward);
+        move.addScaledVector(right.current, moveRight);
+        move.normalize().multiplyScalar(2.2 * safeDelta);
+        nextPosition.add(move);
+      }
+    }
+
+    nextPosition.y = 1.6;
+
+    if (room) {
+      nextPosition.x = THREE.MathUtils.clamp(nextPosition.x, 0.35, room.dimensions.width - 0.35);
+      nextPosition.z = THREE.MathUtils.clamp(nextPosition.z, 0.35, room.dimensions.depth - 0.35);
+    }
+
+    const moveDelta = nextPosition.clone().sub(oldPosition);
+    if (moveDelta.lengthSq() > 0.000001) {
+      camera.position.copy(nextPosition);
+      controlsRef.current?.target.add(moveDelta);
+      controlsRef.current?.update();
+    }
 
     if (state.clock.elapsedTime - lastCameraSync.current > 0.16) {
       lastCameraSync.current = state.clock.elapsedTime;
       setCameraPosition({ x: camera.position.x, y: camera.position.y, z: camera.position.z });
-    }
-
-    if (camera.position.distanceTo(targetPos) < 0.08) {
-      const finalDelta = targetPos.clone().sub(camera.position);
-      camera.position.copy(targetPos);
-      controlsRef.current?.target.add(finalDelta);
-      controlsRef.current?.update();
-      setCameraPosition({ x: targetPos.x, y: 1.6, z: targetPos.z });
-      setFpsMoveTarget(null);
     }
   });
 
@@ -124,7 +181,7 @@ const App: React.FC = () => {
         <Toolbar currentMode={viewMode} onModeChange={setViewMode} />
 
         {viewMode === 'orbit' && <div className="mode-indicator">上帝视角：查看整体布局</div>}
-        {viewMode === 'fps' && <div className="mode-indicator">第一视角：拖动环视，点击地板平滑移动</div>}
+        {viewMode === 'fps' && <div className="mode-indicator">第一视角：拖动环视，WASD/QE 移动</div>}
         {viewMode === 'placement' && <div className="mode-indicator">家具编辑：选中家具后点击地面移动</div>}
 
         <div className="canvas-container">

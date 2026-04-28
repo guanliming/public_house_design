@@ -23,9 +23,10 @@ export const HelpPanel: React.FC<HelpPanelProps> = ({ viewMode }) => {
           <>
             <div><strong>第一视角</strong></div>
             <div><kbd>鼠标拖拽</kbd> 缓慢环视</div>
+            <div><kbd>W</kbd><kbd>S</kbd> 前进 / 后退</div>
+            <div><kbd>A</kbd><kbd>D</kbd> 左右平移</div>
+            <div><kbd>Q</kbd><kbd>E</kbd> 也可左右平移</div>
             <div><kbd>点击地板</kbd> 平滑移动到目标位置</div>
-            <div>当前已关闭缩放和平移</div>
-            <div>当前暂不开放 WASD 漫游，优先保证稳定</div>
           </>
         );
       case 'placement':
