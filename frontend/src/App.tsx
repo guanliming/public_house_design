@@ -1,6 +1,7 @@
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { Html, OrbitControls, Sky, Environment, Grid, useProgress } from '@react-three/drei';
+import { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
 import * as THREE from 'three';
 
 import { useAppStore } from './store/appStore';
@@ -12,10 +13,7 @@ import { HelpPanel } from './components/ui/HelpPanel';
 
 type ViewMode = 'orbit' | 'fps' | 'placement';
 
-type OrbitControlsRef = {
-  target: THREE.Vector3;
-  update: () => void;
-};
+type OrbitControlsRef = OrbitControlsImpl;
 
 const CanvasLoader: React.FC = () => {
   const { active, progress, item, loaded, total } = useProgress();
@@ -157,7 +155,7 @@ const CameraModeController: React.FC<{
 
 const App: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('orbit');
-  const [canvasError, setCanvasError] = useState<string | null>(null);
+  const [canvasError] = useState<string | null>(null);
   const [canvasReady, setCanvasReady] = useState(false);
   const controlsRef = useRef<OrbitControlsRef | null>(null);
   const { ensureDemoProject, setPlacementMode, placementValidation, currentProject, setCameraPosition } = useAppStore();

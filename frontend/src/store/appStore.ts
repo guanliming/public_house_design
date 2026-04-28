@@ -22,6 +22,7 @@ interface AppState {
   ensureDemoProject: () => void;
   setActiveRoom: (roomId: string) => void;
   addRoom: (input: NewRoomInput) => void;
+  updateRoom: (roomId: string, input: NewRoomInput) => void;
   deleteRoom: (roomId: string) => void;
   addFurnitureToProject: (furniture: Furniture) => void;
   addFurnitureFromLibrary: (template: Furniture) => PlacementValidation;
@@ -94,6 +95,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   ensureDemoProject: () => set((s) => (s.currentProject ? s : { projects: [demoProject], currentProject: demoProject })),
   setActiveRoom: (roomId) => set((s) => { if (!s.currentProject) return s; const p = { ...s.currentProject, activeRoomId: roomId, updatedAt: ts() }; return { currentProject: p, projects: s.projects.map((x) => (x.id === p.id ? p : x)), selectedFurniture: null, fpsMoveTarget: null }; }),
   addRoom: (input) => set((s) => { if (!s.currentProject) return s; const room = makeRoom({ ...input, id: `room-${ts()}` }); const p = { ...s.currentProject, rooms: [...s.currentProject.rooms, room], activeRoomId: room.id, updatedAt: ts() }; return { currentProject: p, projects: s.projects.map((x) => (x.id === p.id ? p : x)) }; }),
+  updateRoom: (roomId, input) => set((s) => { if (!s.currentProject) return s; const nextRoom = makeRoom({ ...input, id: roomId }); const p = { ...s.currentProject, rooms: s.currentProject.rooms.map((r) => (r.id === roomId ? nextRoom : r)), updatedAt: ts() }; return { currentProject: p, projects: s.projects.map((x) => (x.id === p.id ? p : x)), fpsMoveTarget: null }; }),
   deleteRoom: (roomId) => set((s) => { if (!s.currentProject || s.currentProject.rooms.length <= 1) return s; const rooms = s.currentProject.rooms.filter((r) => r.id !== roomId); const p = { ...s.currentProject, rooms, activeRoomId: s.currentProject.activeRoomId === roomId ? rooms[0].id : s.currentProject.activeRoomId, furniture: s.currentProject.furniture.filter((f) => f.roomId !== roomId), updatedAt: ts() }; return { currentProject: p, projects: s.projects.map((x) => (x.id === p.id ? p : x)), selectedFurniture: null }; }),
   addFurnitureToProject: (furniture) => set((s) => { if (!s.currentProject) return s; const p = { ...s.currentProject, furniture: [...s.currentProject.furniture, cloneFurniture(furniture)], updatedAt: ts() }; return { currentProject: p, projects: s.projects.map((x) => (x.id === p.id ? p : x)) }; }),
   addFurnitureFromLibrary: (template) => { const room = activeRoom(get().currentProject); if (!room) return { valid: false, message: '当前没有可用房间' }; const c = roomCenter(room); const f = { ...cloneFurniture(template), id: `${template.id}-${ts()}`, roomId: room.id, position: c }; const v = get().validatePlacement(f, f.position); if (!v.valid) { set({ placementValidation: v }); return v; } get().addFurnitureToProject(f); set({ selectedFurniture: f, placementValidation: { valid: true, message: `已添加 ${template.name}` } }); return { valid: true }; },
