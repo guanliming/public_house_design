@@ -16,7 +16,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({ viewMode }) => {
     placement: '家具编辑',
   };
 
-  const room = currentProject?.rooms[0];
+  const room = currentProject?.rooms.find((item) => item.id === currentProject.activeRoomId) ?? currentProject?.rooms[0];
 
   return (
     <div className="status-bar">
@@ -31,7 +31,7 @@ export const StatusBar: React.FC<StatusBarProps> = ({ viewMode }) => {
       </div>
       {room && (
         <div className="position">
-          <strong>房间尺寸:</strong> {room.dimensions.width.toFixed(1)}m × {room.dimensions.depth.toFixed(1)}m × {room.dimensions.height.toFixed(1)}m
+          <strong>房间:</strong> {room.name} / {room.dimensions.width.toFixed(1)}m × {room.dimensions.depth.toFixed(1)}m × {room.dimensions.height.toFixed(1)}m @ X {room.origin.x.toFixed(1)} Z {room.origin.z.toFixed(1)}
         </div>
       )}
       {selectedFurniture && (

@@ -1,5 +1,3 @@
-import * as THREE from 'three';
-
 export interface Vector3 {
   x: number;
   y: number;
@@ -26,20 +24,21 @@ export interface Room {
   id: string;
   type: RoomType;
   name: string;
+  origin: Vector3;
   dimensions: RoomDimensions;
   walls: Wall[];
   floor?: FloorMaterial;
   ceiling?: CeilingMaterial;
 }
 
-export type RoomType = 
-  | 'living_room' 
-  | 'bedroom' 
-  | 'kitchen' 
-  | 'bathroom' 
-  | 'dining_room' 
-  | 'office' 
-  | 'balcony' 
+export type RoomType =
+  | 'living_room'
+  | 'bedroom'
+  | 'kitchen'
+  | 'bathroom'
+  | 'dining_room'
+  | 'office'
+  | 'balcony'
   | 'corridor';
 
 export interface FloorMaterial {
@@ -53,19 +52,20 @@ export interface CeilingMaterial {
   color: string;
 }
 
-export type FurnitureType = 
-  | 'sofa' 
-  | 'chair' 
-  | 'table' 
-  | 'cabinet' 
-  | 'bed' 
-  | 'tv' 
-  | 'light' 
-  | 'rug' 
+export type FurnitureType =
+  | 'sofa'
+  | 'chair'
+  | 'table'
+  | 'cabinet'
+  | 'bed'
+  | 'tv'
+  | 'light'
+  | 'rug'
   | 'plant';
 
 export interface Furniture {
   id: string;
+  roomId: string;
   type: FurnitureType;
   name: string;
   modelUrl: string;
@@ -78,19 +78,20 @@ export interface Furniture {
 export interface DesignProject {
   id: string;
   name: string;
+  activeRoomId?: string;
   reconstructionTaskId?: string;
   rooms: Room[];
   furniture: Furniture[];
-  materials: Record<string, any>;
+  materials: Record<string, unknown>;
   createdAt: number;
   updatedAt: number;
 }
 
-export type ReconstructionStatus = 
-  | 'pending' 
-  | 'uploaded' 
-  | 'processing' 
-  | 'completed' 
+export type ReconstructionStatus =
+  | 'pending'
+  | 'uploaded'
+  | 'processing'
+  | 'completed'
   | 'failed';
 
 export interface ReconstructionTask {

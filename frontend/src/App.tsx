@@ -81,8 +81,8 @@ const CameraModeController: React.FC<{
     keysPressed.current.clear();
 
     if (viewMode === 'fps') {
-      const fpsPosition = new THREE.Vector3(0.9, 1.6, 0.9);
-      const fpsTarget = new THREE.Vector3(4.8, 1.6, 3.6);
+      const fpsPosition = new THREE.Vector3(orbitTarget.x - 3.9, 1.6, orbitTarget.z - 2.7);
+      const fpsTarget = new THREE.Vector3(orbitTarget.x, 1.6, orbitTarget.z);
       camera.position.copy(fpsPosition);
       camera.lookAt(fpsTarget);
       controlsRef.current?.target.copy(fpsTarget);
@@ -170,8 +170,8 @@ const App: React.FC = () => {
     setPlacementMode(viewMode === 'placement');
   }, [setPlacementMode, viewMode]);
 
-  const room = currentProject?.rooms[0];
-  const orbitTarget = useMemo(() => new THREE.Vector3(room ? room.dimensions.width / 2 : 4.8, 1.2, room ? room.dimensions.depth / 2 : 3.6), [room]);
+  const room = currentProject?.rooms.find((item) => item.id === currentProject.activeRoomId) ?? currentProject?.rooms[0];
+  const orbitTarget = useMemo(() => new THREE.Vector3(room ? room.origin.x + room.dimensions.width / 2 : 4.8, 1.2, room ? room.origin.z + room.dimensions.depth / 2 : 3.6), [room]);
 
   return (
     <div className="app-container">
